@@ -1,0 +1,99 @@
+text,intent
+I forgot my password,password_reset
+I cannot remember my password,password_reset
+How do I reset my password,password_reset
+I need to change my password,password_reset
+Can you help me reset my password,password_reset
+I lost my password,password_reset
+I don't know my password anymore,password_reset
+Where can I reset my login password,password_reset
+I need a new password,password_reset
+My password isn't working,password_reset
+
+Where is my order,order_tracking
+Can I track my order,order_tracking
+Where is my package,order_tracking
+My order has not arrived,order_tracking
+I want to know where my package is,order_tracking
+Can you tell me the status of my order,order_tracking
+When will my order arrive,order_tracking
+How can I track my package,order_tracking
+My package is late,order_tracking
+Can you check my delivery status,order_tracking
+
+I want to cancel my account,cancel_account
+How do I delete my account,cancel_account
+Please close my account,cancel_account
+I don't want my account anymore,cancel_account
+I want to permanently delete my account,cancel_account
+How can I cancel my account,cancel_account
+Please deactivate my account,cancel_account
+I no longer want to use this account,cancel_account
+Can you remove my account,cancel_account
+I want to terminate my account,cancel_account
+
+I was charged twice,billing_issue
+Why was I charged twice,billing_issue
+There is an incorrect charge on my account,billing_issue
+I don't recognize this charge,billing_issue
+My bill is incorrect,billing_issue
+I was charged the wrong amount,billing_issue
+There is a problem with my payment,billing_issue
+Why did I get charged extra,billing_issue
+I have a billing problem,billing_issue
+Can you explain this charge,billing_issue
+
+How do I get a refund,refund_request
+I want a refund,refund_request
+Can I get my money back,refund_request
+I would like to request a refund,refund_request
+Please refund my purchase,refund_request
+I want to return my payment,refund_request
+How long does a refund take,refund_request
+Can you process a refund for me,refund_request
+I need my money back,refund_request
+What is your refund policy,refund_request
+
+How do I change my email address,account_update
+I want to update my email,account_update
+Can I change my phone number,account_update
+I need to update my account information,account_update
+How can I change my personal details,account_update
+I want to update my profile,account_update
+My phone number has changed,account_update
+I need to change the email linked to my account,account_update
+How do I edit my account details,account_update
+Can I update my contact information,account_update
+
+I cannot log in,login_problem
+I am unable to sign in,login_problem
+Why can't I access my account,login_problem
+My login is not working,login_problem
+I can't sign into my account,login_problem
+The login page isn't working,login_problem
+I am having trouble logging in,login_problem
+My account won't let me log in,login_problem
+I cannot access my account,login_problem
+I keep getting an error when I log in,login_problem
+
+How do I contact support,support_request
+I need help from customer support,support_request
+Can I speak to a support agent,support_request
+I want to contact customer service,support_request
+How can I reach your support team,support_request
+I need assistance,support_request
+Can someone help me with my problem,support_request
+Where can I get help,support_request
+I want to talk to someone,support_request
+How do I open a support request,support_request
+
+How can I see my subscription?,subscription_information
+What subscription do I have?,subscription_information
+I want information about my subscription,subscription_information
+Can you tell me about my current plan?,subscription_information
+Where can I see my subscription details?,subscription_information
+What does my subscription include?,subscription_information
+Can you explain my subscription?,subscription_information
+I want to know more about my plan,subscription_information
+How do I check my subscription?,subscription_information
+What plan am I currently subscribed to?,subscription_information

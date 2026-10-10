@@ -1,0 +1,142 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  image:
+    name: Build and publish image
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test image
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE_TAG"
+          container_id="$(docker run --detach --publish 8000:8000 "$IMAGE_TAG")"
+          trap 'docker rm --force "$container_id"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs "$container_id"
+          exit 1
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: image
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.ENABLE_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure Kubernetes credentials
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          set -euo pipefail
+          test -n "$KUBE_CONFIG"
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG" | base64 --decode > "$HOME/.kube/config"
+
+      - name: Deploy application
+        env:
+          IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          kubectl apply -f k8s/
+          kubectl -n default set image deployment/intent-classifier "intent-classifier=$IMAGE"
+          kubectl -n default rollout status deployment/intent-classifier --timeout=180s

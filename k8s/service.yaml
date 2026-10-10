@@ -1,0 +1,13 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: intent-classifier
+spec:
+  selector:
+    app: intent-classifier
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
