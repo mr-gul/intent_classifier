@@ -106,7 +106,7 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     needs: image
-    if: ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && vars.ENABLE_DEPLOY == 'true' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && vars.ENABLE_DEPLOY == 'true' && secrets.KUBE_CONFIG != '' }}
     runs-on: ubuntu-latest
     environment: production
     permissions:
