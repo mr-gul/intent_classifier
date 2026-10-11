@@ -138,7 +138,7 @@ You can try other inputs, for example:
 
 ## Configuration / Environment Variables
 
-The application code currently does not require runtime environment variables for startup except for the repository variable, which should be set to 'true'.
+The application code currently does not require runtime environment variables for startup.
 
 CI/CD workflow variables (from `.github/workflows/ci-cd.yml`):
 
