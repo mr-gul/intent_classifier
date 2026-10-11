@@ -120,17 +120,11 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure Kubernetes credentials
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-        run: |
-          set -euo pipefail
-          if [ -z "$KUBE_CONFIG" ]; then
-            echo "KUBE_CONFIG secret is missing or empty."
-            exit 1
-          fi
-          mkdir -p "$HOME/.kube"
-          printf '%s' "$KUBE_CONFIG" | base64 --decode > "$HOME/.kube/config"
+      - name: Verify Kubernetes access
+    run: |
+      set -euo pipefail
+      kubectl config current-context
+      kubectl get nodes
       - name: Deploy application
         env:
           IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
