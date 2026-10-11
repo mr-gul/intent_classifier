@@ -72,9 +72,73 @@ Example response shape:
 }
 ```
 
+## Test the API via Browser
+
+You can test the Intent Classifier API through the interactive FastAPI documentation interface without using `curl` or writing shell commands to send requests.
+
+###  Start the Kubernetes Port Forward
+
+Ensure your Kubernetes cluster is running and the application pods are healthy.
+
+Run the following command in your terminal:
+
+```bash
+kubectl port-forward service/intent-classifier 8000:8000
+```
+
+Keep the terminal open while testing the API. This forwards local port `8000` to the Kubernetes Service.
+
+###  Open the API Documentation
+
+Open the following URL in your web browser:
+
+**http://127.0.0.1:8000/docs**
+
+The FastAPI Swagger UI will display the available API endpoints.
+
+### Test the Prediction Endpoint
+
+1. Locate the `POST /predict` endpoint.
+2. Click to expand it.
+3. Click **Try it out**.
+4. Enter the following JSON in the request body:
+
+   ```json
+   {
+     "text": "I forgot my password"
+   }
+   ```
+
+5. Click **Execute**.
+
+### View the Prediction
+
+The API will process the input text and display the HTTP response, including the model's prediction.
+
+You can try other inputs, for example:
+
+```json
+{
+  "text": "Where can I track my order?"
+}
+```
+
+```json
+{
+  "text": "I want to cancel my subscription"
+}
+```
+
+### Notes
+
+- The Kubernetes cluster and application pods must be running.
+- The port-forward command must remain active while testing.
+- Access through `127.0.0.1` is local to the machine running the port forward. Other users cannot access your local URL directly.
+- Press `Ctrl+C` in the port-forward terminal to stop forwarding. This does not delete or stop the Kubernetes deployment.
+
 ## Configuration / Environment Variables
 
-The application code currently does not require runtime environment variables for startup.
+The application code currently does not require runtime environment variables for startup except for the repository variable, which should be set to 'true'.
 
 CI/CD workflow variables (from `.github/workflows/ci-cd.yml`):
 
