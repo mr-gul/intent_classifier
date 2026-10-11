@@ -106,8 +106,8 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     needs: image
-    if: ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && vars.ENABLE_DEPLOY == 'true' && secrets.KUBE_CONFIG != '' }}
-    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && vars.ENABLE_DEPLOY == 'true' }}
+    runs-on: self-hosted
     environment: production
     permissions:
       contents: read
@@ -125,10 +125,12 @@ jobs:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           set -euo pipefail
-          test -n "$KUBE_CONFIG"
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "KUBE_CONFIG secret is missing or empty."
+            exit 1
+          fi
           mkdir -p "$HOME/.kube"
           printf '%s' "$KUBE_CONFIG" | base64 --decode > "$HOME/.kube/config"
-
       - name: Deploy application
         env:
           IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
