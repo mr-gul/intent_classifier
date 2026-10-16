@@ -5,9 +5,7 @@ FastAPI service that classifies support messages into 9 intents (TF-IDF + Logist
 ## Architecture
 
 
-<p align="center">
-  <img src="docs/architecture-diagram.png" alt="Architecture diagram" width="100%">
-</p>
+<img src="docs/architecture-diagram.svg" alt="Architecture diagram" width="100%">
 
 ## API
 
