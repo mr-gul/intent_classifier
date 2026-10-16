@@ -72,5 +72,5 @@ curl -i http://127.0.0.1:8000/health
 
 - Maximum capacity is three instances.
 - Scale-out takes time: instance launch, app start-up, and health checks.
-- Apache Benchmark may become the bottleneck before the service does.
+- Apache Benchmark may become the bottleneck before the service does during stress test.
 - EC2, ALB, and related AWS resources incur charges.
