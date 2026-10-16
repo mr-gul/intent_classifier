@@ -4,8 +4,9 @@ FastAPI service that classifies support messages into 9 intents (TF-IDF + Logist
 
 ## Architecture
 
+
 <p align="center">
-  <img src="docs/architecture-diagram.svg" alt="Architecture diagram: Client to ALB to target group to Auto Scaling Group of EC2 instances running Nginx, Uvicorn and FastAPI" width="100%">
+  <img src="docs/architecture.png" alt="Architecture diagram" width="100%">
 </p>
 
 ## API
