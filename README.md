@@ -1,6 +1,14 @@
 # Intent Classifier API
 
 A FastAPI service that classifies user text into intents using a pre-trained scikit-learn model.
+## Architecture
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-diagram-master-dark.svg">
+    <img src="docs/architecture-diagram-master.svg" alt="Architecture diagram" width="100%">
+  </picture>
+</p>
 
 ## Features
 
