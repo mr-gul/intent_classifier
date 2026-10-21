@@ -1,194 +1,90 @@
-# Intent Classifier API
+Intent Classifier
 
-A FastAPI service that classifies user text into intents using a pre-trained scikit-learn model.
-## Architecture
+Classifies customer-support messages into 9 intents (TF-IDF + Logistic Regression). This branch (kserve) adds a KServe InferenceService manifest so the model can be served on Kubernetes.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-diagram-master-dark.svg">
-    <img src="docs/architecture-diagram-master.svg" alt="Architecture diagram" width="100%">
-  </picture>
-</p>
+The same model is also available as a standalone FastAPI app (app/), which is useful for local development and testing.
 
-## Features
+Intents
 
-- REST API for intent prediction (`POST /predict`)
-- Health and root endpoints (`/health`, `/`)
-- Pre-trained model + TF-IDF vectorizer loaded from `model/`
-- Containerized runtime via Docker
-- Kubernetes manifests for deployment (`k8s/`)
-- CI/CD workflow for tests, image publish, and optional Kubernetes deploy
+account_update · billing_issue · cancel_account · login_problem · order_tracking · password_reset · refund_request · subscription_information · support_request
 
-## Project Structure
+Project structure
+text
+app/                  FastAPI app: routes, request schema, prediction logic
+model/                Trained artifacts: intent_classifier.joblib, tfidf_vectorizer.joblib
+tests/                API tests (pytest)
+train.py              Trains the model and writes the artifacts to model/
+inference-svc.yaml    KServe InferenceService (sklearn runtime)
+requirements.txt      Python dependencies (pinned)
+Run locally (FastAPI)
 
-```text
-app/                # FastAPI app, schema, and prediction logic
-model/              # Serialized model artifacts (.joblib)
-tests/              # API tests (pytest)
-k8s/                # Kubernetes Deployment and Service manifests
-Dockerfile          # Container build/runtime definition
-requirements.txt    # Python dependencies
-.github/workflows/ci-cd.yml
-```
+Requires Python 3.12.
 
-## Prerequisites
+bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-- Python 3.12
-- pip
-- (Optional) Docker
-- (Optional) kubectl + Kubernetes cluster
+Interactive docs: http://127.0.0.1:8000/docs
 
-## Run Locally
-
-From the repository root:
-
-```bash
-python -m venv .venv && source .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-API will be available at `http://127.0.0.1:8000`.
-
-## Run Tests
-
-```bash
-python -m pytest
-```
-
-## API Endpoints
-
-| Method | Path       | Description |
-|---|---|---|
-| GET | `/` | Service info message |
-| GET | `/health` | Health check |
-| POST | `/predict` | Predict intent from input text |
-
-### Example Request
-
-```bash
-curl -X POST "http://127.0.0.1:8000/predict" \
+Method	Path	Description
+GET	/	Service info message
+GET	/health	Health check
+POST	/predict	Returns intent and confidence
+bash
+curl -X POST http://127.0.0.1:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"text":"I forgot my password"}'
-```
-
-Example response shape:
-
-```json
+  -d '{"text": "I forgot my password"}'
+json
 {
   "text": "I forgot my password",
   "intent": "password_reset",
   "confidence": 0.9876
 }
-```
 
-## Test the API via Browser
+Run the tests with python -m pytest.
 
-You can test the Intent Classifier API through the interactive FastAPI documentation interface without using `curl` or writing shell commands to send requests.
+Deploy with KServe
 
-###  Start the Kubernetes Port Forward
+Prerequisites: a Kubernetes cluster with KServe installed, and kubectl pointing at it.
 
-Ensure your Kubernetes cluster is running and the application pods are healthy.
+inference-svc.yaml defines an InferenceService named intent-classifier:
 
-Run the following command in your terminal:
+Runtime: KServe sklearn model format
+Model source: storageUri points to the model.pkl asset on the v1.0.0 release
+Resources: requests 100m CPU / 512Mi memory; limits 1 CPU / 1Gi memory
+bash
+kubectl apply -f inference-svc.yaml
+kubectl get inferenceservice intent-classifier      # wait until READY is True
 
-```bash
-kubectl port-forward service/intent-classifier 8000:8000
-```
+Reach it locally with a port-forward (service name may vary by KServe version; check kubectl get svc):
 
-Keep the terminal open while testing the API. This forwards local port `8000` to the Kubernetes Service.
+bash
+kubectl port-forward svc/intent-classifier-predictor 8080:80
+curl -X POST http://127.0.0.1:8080/v1/models/intent-classifier:predict \
+  -H "Content-Type: application/json" \
+  -d '{"instances": [...]}'
+Input format
 
-###  Open the API Documentation
+The KServe sklearn runtime serves one pickled estimator and passes the request instances straight to predict. The classifier in this repo is a plain LogisticRegression and the TfidfVectorizer is a separate artifact, so raw text is not vectorized for you. Either:
 
-Open the following URL in your web browser:
+publish a single scikit-learn Pipeline (vectorizer + classifier) as model.pkl, so text goes in directly; or
+send pre-computed TF-IDF feature vectors as instances.
 
-**http://127.0.0.1:8000/docs**
+Check which one your v1.0.0 model.pkl contains before relying on text input.
 
-The FastAPI Swagger UI will display the available API endpoints.
+Updating the model
+Retrain and save artifacts (see below).
+Publish the new model.pkl as a release asset.
+Update storageUri in inference-svc.yaml and run kubectl apply -f inference-svc.yaml.
+Training
 
-### Test the Prediction Endpoint
+train.py reads data/intent.csv (columns text, intent), splits 70/30 with stratification, fits TF-IDF + Logistic Regression, prints accuracy and a classification report, and saves both artifacts to model/.
 
-1. Locate the `POST /predict` endpoint.
-2. Click to expand it.
-3. Click **Try it out**.
-4. Enter the following JSON in the request body:
+train.py currently uses hardcoded absolute paths (/home/gulraiz/intent-classifier/...). Change them to paths on your machine before running it, and make sure data/intent.csv exists (it is not on this branch).
 
-   ```json
-   {
-     "text": "I forgot my password"
-   }
-   ```
-
-5. Click **Execute**.
-
-### View the Prediction
-
-The API will process the input text and display the HTTP response, including the model's prediction.
-
-You can try other inputs, for example:
-
-```json
-{
-  "text": "Where can I track my order?"
-}
-```
-
-```json
-{
-  "text": "I want to cancel my subscription"
-}
-```
-
-### Notes
-
-- The Kubernetes cluster and application pods must be running.
-- The port-forward command must remain active while testing.
-- Access through `127.0.0.1` is local to the machine running the port forward. Other users cannot access your local URL directly.
-- Press `Ctrl+C` in the port-forward terminal to stop forwarding. This does not delete or stop the Kubernetes deployment.
-
-## Configuration / Environment Variables
-
-The application code currently does not require runtime environment variables for startup.
-
-CI/CD workflow variables (from `.github/workflows/ci-cd.yml`):
-
-- `PYTHON_VERSION`
-- `IMAGE_NAME`
-- `IMAGE_TAG` (smoke test step)
-- `IMAGE` (deploy step)
-- `ENABLE_DEPLOY` repository variable gates the deploy job
-
-## Docker
-
-Build and run:
-
-```bash
-docker build -t intent-classifier:local .
-docker run --rm -p 8000:8000 intent-classifier:local
-```
-
-## Kubernetes
-
-Manifests are provided in `k8s/` for:
-
-- `Deployment` (`k8s/deployment.yaml`)
-- `Service` (`k8s/service.yaml`)
-
-Apply them:
-
-```bash
-kubectl apply -f k8s/
-```
-
-To update the deployment image (pattern used in CI):
-
-```bash
-kubectl -n default set image deployment/intent-classifier intent-classifier=<your-image>
-kubectl -n default rollout status deployment/intent-classifier --timeout=180s
-```
-
-## GitHub Actions Workflow
-
-`.github/workflows/ci-cd.yml` defines:
-
-1. **test**: installs dependencies and runs `python -m pytest`
-2. **image**: builds and pushes image to GHCR, then smoke-tests `/health`
-3. **deploy**: deploys to Kubernetes when deploy conditions are met
+Related branches
+Branch	Deployment
+master	Docker image, Kubernetes manifests, GitHub Actions CI/CD
+virtual_machine	EC2 Auto Scaling Group behind an Application Load Balancer
+kserve	KServe InferenceService
